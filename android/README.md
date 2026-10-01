@@ -31,7 +31,7 @@ No client secret is used. Tokens are stored only in encrypted on-device preferen
 
 - Sign in opens Spotify's authorize page in Chrome Custom Tabs.
 - The app polls Spotify's Web API `GET /v1/me/player/currently-playing` (not recently played).
-- When a track is playing, album art (full screen) plus title and artist are rendered and applied with `WallpaperManager`.
+- When a track is playing, **album art only** (full screen, no title or artist on the wallpaper) is applied with `WallpaperManager`.
 - When nothing is playing, or you are signed out, the app shows a clear message — **no sample or invented tracks**.
 
 Playback stays in the Spotify app. This app has **no** play, pause, or skip controls.
