@@ -27,3 +27,4 @@ ios/**/DerivedData/
 .env.*
 !*.example
 !*.example.*
+android/.kotlin/
