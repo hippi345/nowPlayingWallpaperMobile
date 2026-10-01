@@ -31,8 +31,14 @@ class WallpaperBitmapRenderer(
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
 
-        drawFrostedBackdrop(canvas, art, width, height)
-        drawFitCenterCover(canvas, art, width, height)
+        drawFrostedFullBackground(canvas, art, width, height)
+
+        val frame = WallpaperGlassLayout.frameForCanvas(art.width, art.height, width, height)
+        val cover = Bitmap.createScaledBitmap(art, frame.coverWidth, frame.coverHeight, true)
+        LiquidGlassFrameDrawer.drawShadow(canvas, frame)
+        LiquidGlassFrameDrawer.drawGlassPanel(canvas, frame)
+        LiquidGlassFrameDrawer.drawSharpCover(canvas, cover, frame)
+        cover.recycle()
         art.recycle()
         bitmap
     }
@@ -46,28 +52,13 @@ class WallpaperBitmapRenderer(
         }
     }
 
-    private fun drawFrostedBackdrop(canvas: Canvas, source: Bitmap, width: Int, height: Int) {
+    private fun drawFrostedFullBackground(canvas: Canvas, source: Bitmap, width: Int, height: Int) {
         val blurred = FrostedBackdropBlur.blurCenterCropForCanvas(source, width, height)
         canvas.drawBitmap(blurred, 0f, 0f, null)
         blurred.recycle()
         val frostVeil = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.argb(115, 245, 245, 250)
+            color = Color.argb(100, 245, 245, 250)
         }
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), frostVeil)
-    }
-
-    /** Sharp full cover on top of the frost layer. */
-    private fun drawFitCenterCover(canvas: Canvas, source: Bitmap, width: Int, height: Int) {
-        val (scaledW, scaledH) = WallpaperArtLayout.fitCenterSize(
-            source.width,
-            source.height,
-            width,
-            height,
-        )
-        val scaled = Bitmap.createScaledBitmap(source, scaledW, scaledH, true)
-        val left = (width - scaledW) / 2f
-        val top = (height - scaledH) / 2f
-        canvas.drawBitmap(scaled, left, top, null)
-        scaled.recycle()
     }
 }

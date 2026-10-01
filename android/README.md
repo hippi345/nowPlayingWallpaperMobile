@@ -31,8 +31,7 @@ No client secret is used. Tokens are stored only in encrypted on-device preferen
 
 - Sign in opens Spotify's authorize page in Chrome Custom Tabs.
 - While signed in, a **foreground service** polls Spotify's Web API `GET /v1/me/player/currently-playing` every **2 seconds**, including when this app is not on screen (home screen, other apps). You do not need to open the app for the wallpaper to update.
-- Wallpaper bitmap is the device’s `widthPixels` × `heightPixels`. Frosted backdrop: half-res multi-pass box blur (unit-tested pixel path), bilinear upscale, light veil; sharp **full cover** **fit-center** on top. Single `setBitmap` when ready (no black flash). No text on the image.
-- When a track is playing, **album art only** (full screen, no title or artist on the wallpaper) is applied with `WallpaperManager`.
+- Wallpaper is the device’s `widthPixels` × `heightPixels`: **full-screen frosted album art** (half-res box blur, unit-tested), with the sharp cover in a centered **liquid-glass** frame (dark frosted panel, soft light edge, shadow). One off-screen compose, then `setBitmap` to **home and lock** (`FLAG_SYSTEM | FLAG_LOCK`); no black flash. Failed art download leaves the previous wallpaper unchanged. No text on the image.
 - When nothing is playing, or you are signed out, the app shows a clear message — **no sample or invented tracks**.
 
 Playback stays in the Spotify app. This app has **no** play, pause, or skip controls.
