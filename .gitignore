@@ -12,6 +12,8 @@ android/app/build/
 shared/**/build/
 android/local.properties
 android/**/local.properties
+android/release-signing.properties
+android/**/*.jks
 *.iml
 .idea/
 .cxx/

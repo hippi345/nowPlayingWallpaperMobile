@@ -13,6 +13,13 @@ val localProperties = Properties().apply {
     }
 }
 
+val releaseSigningProperties = Properties().apply {
+    val file = rootProject.file("release-signing.properties")
+    if (file.exists()) {
+        file.inputStream().use { load(it) }
+    }
+}
+
 android {
     namespace = "com.hippi345.nowplayingwallpaper"
     compileSdk = 35
@@ -29,9 +36,22 @@ android {
         buildConfigField("String", "SPOTIFY_REDIRECT_URI", "\"http://127.0.0.1:8897/callback\"")
     }
 
+    signingConfigs {
+        create("release") {
+            val storeFilePath = releaseSigningProperties.getProperty("storeFile")
+            if (!storeFilePath.isNullOrBlank()) {
+                storeFile = rootProject.file(storeFilePath)
+                storePassword = releaseSigningProperties.getProperty("storePassword")
+                keyAlias = releaseSigningProperties.getProperty("keyAlias")
+                keyPassword = releaseSigningProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 

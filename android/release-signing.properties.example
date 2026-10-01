@@ -1,0 +1,5 @@
+# Copy to release-signing.properties (gitignored). Generate a local keystore; do not commit secrets.
+storeFile=app/sideload-release.jks
+storePassword=change_me
+keyAlias=sideload
+keyPassword=change_me
