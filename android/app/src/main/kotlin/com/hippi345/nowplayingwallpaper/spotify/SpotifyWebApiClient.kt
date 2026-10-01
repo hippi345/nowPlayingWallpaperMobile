@@ -14,6 +14,7 @@ class SpotifyWebApiClient(
         data class Playing(val track: NowPlayingTrack) : CurrentlyPlayingResult()
         data object NothingPlaying : CurrentlyPlayingResult()
         data object Unauthorized : CurrentlyPlayingResult()
+        data class RateLimited(val retryAfterHeader: String?) : CurrentlyPlayingResult()
         data class Error(val message: String) : CurrentlyPlayingResult()
     }
 
@@ -31,6 +32,7 @@ class SpotifyWebApiClient(
             when (response.code) {
                 204 -> CurrentlyPlayingResult.NothingPlaying
                 401 -> CurrentlyPlayingResult.Unauthorized
+                429 -> CurrentlyPlayingResult.RateLimited(response.header("Retry-After"))
                 200 -> {
                     val body = response.body?.string() ?: ""
                     val track = SpotifyCurrentlyPlayingParser.parse(body)

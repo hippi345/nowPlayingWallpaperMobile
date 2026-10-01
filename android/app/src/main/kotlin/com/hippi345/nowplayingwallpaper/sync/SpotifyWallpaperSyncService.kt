@@ -80,8 +80,8 @@ class SpotifyWallpaperSyncService : Service() {
                     stopSelf()
                     break
                 }
-                engine.syncOnce()
-                delay(WallpaperSyncEngine.POLL_INTERVAL_MS)
+                val nextDelayMs = engine.syncOnce()
+                delay(nextDelayMs)
             }
         }
     }
