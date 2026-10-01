@@ -4,8 +4,14 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Original eighth-note mark (not Material / Apple glyphs), centered in adaptive safe zone. -->
+    <!-- Single eighth note: oval head, stem on the right, one right-curving flag (safe zone centered). -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M40,72 C40,62 48,54 58,54 C63,54 67,56 70,59 L70,26 L76,26 L76,62 C76,71 69,78 60,78 C51,78 44,72 42,64 C37,66 32,65 29,61 C26,57 26,52 29,47 C33,42 39,40 45,42 L45,72 Z M70,26 C79,28 86,35 86,44 C86,51 81,57 74,59 L70,58 L70,26 Z" />
+        android:pathData="M 34,68 a 11,9 0 1,0 22,0 a 11,9 0 1,0 -22,0 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 55,30 L 61,30 L 61,68 L 55,68 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 61,30 C 81,33 88,44 78,56 C 72,48 66,42 61,40 Z" />
 </vector>
