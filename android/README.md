@@ -1,0 +1,40 @@
+# Android — Spotify now-playing wallpaper
+
+## Use Joel's existing Spotify app
+
+Do **not** create a new Spotify Developer app. Reuse the same application you already use for **nowPlayingDesktops** and **spot-ai-fy**.
+
+1. Copy the **Client ID** from that app's local config on your machine (it is not stored in those git repos).
+2. Paste it into `android/local.properties` (gitignored):
+
+```properties
+SPOTIFY_CLIENT_ID=your_spotify_client_id_here
+```
+
+Rebuild or sync Gradle so `BuildConfig` picks up the value.
+
+## Redirect URI (required once in Spotify Dashboard)
+
+In the **existing** Spotify app's settings, add this **exact** redirect URI (works with the Android emulator and physical devices via a custom scheme):
+
+```text
+com.hippi345.nowplayingwallpaper://callback
+```
+
+No client secret is used. Authorization uses **PKCE**; access and refresh tokens are stored only in encrypted on-device preferences.
+
+## Behavior
+
+- Sign in opens Spotify's authorize page in Chrome Custom Tabs.
+- The app polls Spotify's Web API `GET /v1/me/player/currently-playing` (not recently played).
+- When a track is playing, album art (full screen) plus title and artist are rendered and applied with `WallpaperManager`.
+- When nothing is playing, or you are signed out, the app shows a clear message — **no sample or invented tracks**.
+
+Playback stays in the Spotify app. This app has **no** play, pause, or skip controls.
+
+## Build
+
+```bash
+cd android
+./gradlew :domain:test :app:testDebugUnitTest :app:assembleDebug
+```

@@ -3,5 +3,8 @@
     <string name="app_name">Now Playing Wallpaper</string>
     <string name="wallpaper_preview_title">Wallpaper preview</string>
     <string name="spotify_only_notice">Spotify only. Wallpaper display — no playback controls.</string>
-    <string name="stub_data_notice">Showing stub now playing data. Spotify sign-in not wired yet.</string>
+    <string name="missing_client_id_title">Spotify Client ID required</string>
+    <string name="sign_in_spotify">Sign in with Spotify</string>
+    <string name="sign_out_spotify">Sign out</string>
+    <string name="no_transport_controls">No play, pause, or skip — wallpaper only.</string>
 </resources>

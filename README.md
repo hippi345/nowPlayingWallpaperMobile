@@ -4,7 +4,7 @@ Spotify-only phone wallpapers that show the album art, track title, and artist f
 
 | Platform | Path | Status (first slice) |
 |----------|------|----------------------|
-| Android | [`android/`](android/) | Compose preview UI, JVM-tested domain models, stub Spotify data source |
+| Android | [`android/`](android/) | Spotify PKCE sign-in, live currently-playing API, system wallpaper updates |
 | iOS | [`ios/`](ios/) | SwiftUI preview UI, stub Spotify data source (build on macOS with Xcode) |
 
 ## Requirements
@@ -17,11 +17,7 @@ Spotify-only phone wallpapers that show the album art, track title, and artist f
 
 ### Android
 
-Copy `android/local.properties.example` to `android/local.properties` (gitignored) and set:
-
-```properties
-SPOTIFY_CLIENT_ID=your_spotify_client_id_here
-```
+See [`android/README.md`](android/README.md). Copy `android/local.properties.example` to `android/local.properties` and paste the **Client ID from your existing Spotify app** (nowPlayingDesktops / spot-ai-fy — not a new app). Add redirect URI `com.hippi345.nowplayingwallpaper://callback` in that app's Spotify Dashboard.
 
 ### iOS
 

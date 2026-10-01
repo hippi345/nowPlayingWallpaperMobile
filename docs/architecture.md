@@ -10,7 +10,7 @@
 
 ```
 shared/domain/     # Kotlin JVM: NowPlayingTrack, wallpaper layout model, formatting
-android/           # Jetpack Compose app + Android wallpaper pipeline (stubbed)
+android/           # Jetpack Compose app + Spotify PKCE + WallpaperManager
 ios/               # SwiftUI app + wallpaper export pipeline (stubbed)
 ```
 
@@ -28,13 +28,11 @@ flowchart LR
   Spotify --> Auth --> Repo --> Model --> Render --> Surface
 ```
 
-**First slice:** `StubNowPlayingRepository` feeds sample tracks into the preview UI. Spotify SDK wiring and wallpaper installation are explicit TODOs in code.
+**Android (current):** PKCE authorization against Joel's existing Spotify app Client ID (`local.properties`), Web API `currently-playing`, bitmap render (full-screen art + title/artist), `WallpaperManager.setBitmap`. Tokens stay on device in encrypted prefs.
 
-## Android (planned)
+## Android (future)
 
-1. Authenticate via Spotify Android SDK / documented sign-in.
-2. Poll or subscribe to currently playing metadata.
-3. Render bitmap (art + text) and push to `WallpaperManager` or a `WallpaperService` (live wallpaper TBD).
+- Background wallpaper refresh while the app is not open (WorkManager / foreground service TBD).
 
 ## iOS (planned)
 

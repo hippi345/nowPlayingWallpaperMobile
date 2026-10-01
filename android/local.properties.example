@@ -1,2 +1,5 @@
 # Copy to local.properties (gitignored). Do not commit real values.
+#
+# Paste the Client ID from Joel's EXISTING Spotify Developer app (nowPlayingDesktops / spot-ai-fy).
+# Also add redirect URI com.hippi345.nowplayingwallpaper://callback in that app's Spotify Dashboard.
 SPOTIFY_CLIENT_ID=your_spotify_client_id_here

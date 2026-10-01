@@ -26,6 +26,7 @@ android {
 
         val clientId = localProperties.getProperty("SPOTIFY_CLIENT_ID", "your_spotify_client_id_here")
         buildConfigField("String", "SPOTIFY_CLIENT_ID", "\"$clientId\"")
+        buildConfigField("String", "SPOTIFY_REDIRECT_URI", "\"com.hippi345.nowplayingwallpaper://callback\"")
     }
 
     buildTypes {
@@ -60,4 +61,15 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
     debugImplementation("androidx.compose.ui:ui-tooling")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("androidx.browser:browser:1.8.0")
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    implementation("io.coil-kt:coil-compose:2.7.0")
+    testImplementation("org.json:json:20240303")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.11.3")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
 }

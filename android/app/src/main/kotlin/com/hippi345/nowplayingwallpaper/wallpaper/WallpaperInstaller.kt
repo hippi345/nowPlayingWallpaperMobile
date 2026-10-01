@@ -1,17 +1,24 @@
 package com.hippi345.nowplayingwallpaper.wallpaper
 
+import android.app.WallpaperManager
 import android.content.Context
-import com.hippi345.nowplayingwallpaper.domain.WallpaperLayout
+import android.graphics.Bitmap
+import com.hippi345.nowplayingwallpaper.domain.NowPlayingTrack
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
-/**
- * Applies rendered wallpaper pixels to the system. Not implemented in the first slice.
- */
 interface WallpaperInstaller {
-    suspend fun apply(context: Context, layout: WallpaperLayout)
+    suspend fun apply(context: Context, track: NowPlayingTrack)
 }
 
-class StubWallpaperInstaller : WallpaperInstaller {
-    override suspend fun apply(context: Context, layout: WallpaperLayout) {
-        // TODO: Render layout to Bitmap and call WallpaperManager.setBitmap(...)
+class AndroidWallpaperInstaller(
+    private val renderer: WallpaperBitmapRenderer = WallpaperBitmapRenderer(),
+) : WallpaperInstaller {
+    override suspend fun apply(context: Context, track: NowPlayingTrack) {
+        val bitmap = renderer.render(context, track)
+        withContext(Dispatchers.Main) {
+            WallpaperManager.getInstance(context.applicationContext).setBitmap(bitmap)
+        }
+        bitmap.recycle()
     }
 }
