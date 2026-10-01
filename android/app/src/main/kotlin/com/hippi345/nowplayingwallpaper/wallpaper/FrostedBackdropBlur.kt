@@ -1,65 +1,127 @@
 package com.hippi345.nowplayingwallpaper.wallpaper
 
 import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.RenderEffect
-import android.graphics.RenderNode
-import android.graphics.Shader
-import android.os.Build
-import androidx.annotation.RequiresApi
 import kotlin.math.max
-import kotlin.math.min
 
 /**
- * High-resolution frost blur for the wallpaper backdrop (not a tiny proxy upscale).
+ * Frost backdrop: half-resolution center-crop, multi-pass box blur, upscale with filtering.
+ * Same pixel path as [blurPixelsForFrost] (unit-tested). No RenderNode / tiny proxy upscale.
  */
 object FrostedBackdropBlur {
-    /** Blur radius in pixels at full canvas resolution (API 31+). */
-    private const val FULL_RES_BLUR_RADIUS_PX = 36f
-
-    /** Half-res box blur radius before upscaling (API 26–30). */
-    private const val HALF_RES_BOX_RADIUS = 16
+    private const val HALF_SCALE = 2
+    private const val BOX_RADIUS = 18
+    private const val BOX_PASSES = 4
 
     fun blurCenterCropForCanvas(source: Bitmap, canvasWidth: Int, canvasHeight: Int): Bitmap {
         val crop = centerCrop(source, canvasWidth, canvasHeight)
-        val blurred = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            blurWithRenderEffect(crop, FULL_RES_BLUR_RADIUS_PX)
-        } else {
-            blurAtHalfResolution(crop)
-        }
+        val blurred = blurFrostBitmap(crop)
         if (blurred != crop) crop.recycle()
         return blurred
     }
 
-    @RequiresApi(Build.VERSION_CODES.S)
-    private fun blurWithRenderEffect(source: Bitmap, radiusPx: Float): Bitmap {
-        val node = RenderNode("frostBackdropBlur")
-        node.setPosition(0, 0, source.width, source.height)
-        node.setRenderEffect(
-            RenderEffect.createBlurEffect(
-                radiusPx,
-                radiusPx,
-                Shader.TileMode.CLAMP,
-            ),
-        )
-        val recording = node.beginRecording(source.width, source.height)
-        recording.drawBitmap(source, 0f, 0f, null)
-        node.endRecording()
-        val output = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)
-        Canvas(output).drawRenderNode(node)
-        return output
+    /**
+     * Same frost blur the wallpaper uses, on a pixel buffer (for JVM unit tests).
+     */
+    fun blurPixelsForFrost(pixels: IntArray, width: Int, height: Int): IntArray {
+        val halfW = max(1, width / HALF_SCALE)
+        val halfH = max(1, height / HALF_SCALE)
+        val half = downsampleBoxAverage(pixels, width, height, halfW, halfH)
+        val blurredHalf = BoxBlurPixels.blur(half, halfW, halfH, BOX_RADIUS, BOX_PASSES)
+        return upsampleBilinear(blurredHalf, halfW, halfH, width, height)
     }
 
-    private fun blurAtHalfResolution(source: Bitmap): Bitmap {
-        val halfW = max(1, source.width / 2)
-        val halfH = max(1, source.height / 2)
-        val half = Bitmap.createScaledBitmap(source, halfW, halfH, true)
-        val blurredHalf = boxBlur(half, HALF_RES_BOX_RADIUS, passes = 3)
-        if (half != blurredHalf) half.recycle()
-        val full = Bitmap.createScaledBitmap(blurredHalf, source.width, source.height, true)
-        blurredHalf.recycle()
-        return full
+    private fun blurFrostBitmap(source: Bitmap): Bitmap {
+        val w = source.width
+        val h = source.height
+        val pixels = IntArray(w * h)
+        source.getPixels(pixels, 0, w, 0, 0, w, h)
+        val frosted = blurPixelsForFrost(pixels, w, h)
+        val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        out.setPixels(frosted, 0, w, 0, 0, w, h)
+        return out
+    }
+
+    internal fun downsampleBoxAverage(
+        pixels: IntArray,
+        srcW: Int,
+        srcH: Int,
+        dstW: Int,
+        dstH: Int,
+    ): IntArray {
+        val out = IntArray(dstW * dstH)
+        for (y in 0 until dstH) {
+            val y0 = y * srcH / dstH
+            val y1 = max(y0 + 1, (y + 1) * srcH / dstH)
+            for (x in 0 until dstW) {
+                val x0 = x * srcW / dstW
+                val x1 = max(x0 + 1, (x + 1) * srcW / dstW)
+                var a = 0
+                var r = 0
+                var g = 0
+                var b = 0
+                var count = 0
+                for (sy in y0 until y1) {
+                    for (sx in x0 until x1) {
+                        val c = pixels[sy * srcW + sx]
+                        a += c ushr 24 and 0xFF
+                        r += c ushr 16 and 0xFF
+                        g += c ushr 8 and 0xFF
+                        b += c and 0xFF
+                        count++
+                    }
+                }
+                out[y * dstW + x] =
+                    ((a / count) shl 24) or
+                    ((r / count) shl 16) or
+                    ((g / count) shl 8) or
+                    (b / count)
+            }
+        }
+        return out
+    }
+
+    internal fun upsampleBilinear(
+        pixels: IntArray,
+        srcW: Int,
+        srcH: Int,
+        dstW: Int,
+        dstH: Int,
+    ): IntArray {
+        val out = IntArray(dstW * dstH)
+        for (y in 0 until dstH) {
+            val gy = (y + 0.5f) * srcH / dstH - 0.5f
+            val y0 = gy.toInt().coerceIn(0, srcH - 1)
+            val y1 = (y0 + 1).coerceAtMost(srcH - 1)
+            val yFrac = gy - y0
+            for (x in 0 until dstW) {
+                val gx = (x + 0.5f) * srcW / dstW - 0.5f
+                val x0 = gx.toInt().coerceIn(0, srcW - 1)
+                val x1 = (x0 + 1).coerceAtMost(srcW - 1)
+                val xFrac = gx - x0
+                val c00 = pixels[y0 * srcW + x0]
+                val c10 = pixels[y0 * srcW + x1]
+                val c01 = pixels[y1 * srcW + x0]
+                val c11 = pixels[y1 * srcW + x1]
+                out[y * dstW + x] = lerp4(c00, c10, c01, c11, xFrac, yFrac)
+            }
+        }
+        return out
+    }
+
+    private fun lerp4(c00: Int, c10: Int, c01: Int, c11: Int, fx: Float, fy: Float): Int {
+        fun ch(c: Int, shift: Int) = (c shr shift) and 0xFF
+        fun pack(a: Int, r: Int, g: Int, b: Int) = (a shl 24) or (r shl 16) or (g shl 8) or b
+        val a = bilinear(ch(c00, 24), ch(c10, 24), ch(c01, 24), ch(c11, 24), fx, fy)
+        val r = bilinear(ch(c00, 16), ch(c10, 16), ch(c01, 16), ch(c11, 16), fx, fy)
+        val g = bilinear(ch(c00, 8), ch(c10, 8), ch(c01, 8), ch(c11, 8), fx, fy)
+        val b = bilinear(ch(c00, 0), ch(c10, 0), ch(c01, 0), ch(c11, 0), fx, fy)
+        return pack(a, r, g, b)
+    }
+
+    private fun bilinear(v00: Int, v10: Int, v01: Int, v11: Int, fx: Float, fy: Float): Int {
+        val top = v00 + (v10 - v00) * fx
+        val bottom = v01 + (v11 - v01) * fx
+        return (top + (bottom - top) * fy).toInt().coerceIn(0, 255)
     }
 
     private fun centerCrop(source: Bitmap, width: Int, height: Int): Bitmap {
@@ -79,91 +141,4 @@ object FrostedBackdropBlur {
         if (scaled != source) scaled.recycle()
         return cropped
     }
-
-    /** Separable box blur (approximates Gaussian); used only below API 31. */
-    internal fun boxBlur(source: Bitmap, radius: Int, passes: Int): Bitmap {
-        val w = source.width
-        val h = source.height
-        var pixels = IntArray(w * h)
-        source.getPixels(pixels, 0, w, 0, 0, w, h)
-        repeat(passes) {
-            pixels = boxBlurHorizontal(pixels, w, h, radius)
-            pixels = boxBlurVertical(pixels, w, h, radius)
-        }
-        val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        out.setPixels(pixels, 0, w, 0, 0, w, h)
-        return out
-    }
-
-    private fun boxBlurHorizontal(pixels: IntArray, w: Int, h: Int, radius: Int): IntArray {
-        val out = IntArray(pixels.size)
-        val window = radius * 2 + 1
-        for (y in 0 until h) {
-            var rSum = 0
-            var gSum = 0
-            var bSum = 0
-            var aSum = 0
-            for (i in -radius..radius) {
-                val c = pixels[y * w + clamp(i, 0, w - 1)]
-                aSum += c ushr 24 and 0xFF
-                rSum += c ushr 16 and 0xFF
-                gSum += c ushr 8 and 0xFF
-                bSum += c and 0xFF
-            }
-            for (x in 0 until w) {
-                val idx = y * w + x
-                out[idx] =
-                    ((aSum / window) shl 24) or
-                    ((rSum / window) shl 16) or
-                    ((gSum / window) shl 8) or
-                    (bSum / window)
-                val removeX = clamp(x - radius, 0, w - 1)
-                val addX = clamp(x + radius + 1, 0, w - 1)
-                val remove = pixels[y * w + removeX]
-                val add = pixels[y * w + addX]
-                aSum += (add ushr 24 and 0xFF) - (remove ushr 24 and 0xFF)
-                rSum += (add ushr 16 and 0xFF) - (remove ushr 16 and 0xFF)
-                gSum += (add ushr 8 and 0xFF) - (remove ushr 8 and 0xFF)
-                bSum += (add and 0xFF) - (remove and 0xFF)
-            }
-        }
-        return out
-    }
-
-    private fun boxBlurVertical(pixels: IntArray, w: Int, h: Int, radius: Int): IntArray {
-        val out = IntArray(pixels.size)
-        val window = radius * 2 + 1
-        for (x in 0 until w) {
-            var rSum = 0
-            var gSum = 0
-            var bSum = 0
-            var aSum = 0
-            for (i in -radius..radius) {
-                val c = pixels[clamp(i, 0, h - 1) * w + x]
-                aSum += c ushr 24 and 0xFF
-                rSum += c ushr 16 and 0xFF
-                gSum += c ushr 8 and 0xFF
-                bSum += c and 0xFF
-            }
-            for (y in 0 until h) {
-                val idx = y * w + x
-                out[idx] =
-                    ((aSum / window) shl 24) or
-                    ((rSum / window) shl 16) or
-                    ((gSum / window) shl 8) or
-                    (bSum / window)
-                val removeY = clamp(y - radius, 0, h - 1)
-                val addY = clamp(y + radius + 1, 0, h - 1)
-                val remove = pixels[removeY * w + x]
-                val add = pixels[addY * w + x]
-                aSum += (add ushr 24 and 0xFF) - (remove ushr 24 and 0xFF)
-                rSum += (add ushr 16 and 0xFF) - (remove ushr 16 and 0xFF)
-                gSum += (add ushr 8 and 0xFF) - (remove ushr 8 and 0xFF)
-                bSum += (add and 0xFF) - (remove and 0xFF)
-            }
-        }
-        return out
-    }
-
-    private fun clamp(value: Int, minVal: Int, maxVal: Int): Int = min(max(value, minVal), maxVal)
 }
