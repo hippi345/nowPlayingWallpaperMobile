@@ -13,15 +13,19 @@ SPOTIFY_CLIENT_ID=your_spotify_client_id_here
 
 Rebuild or sync Gradle so `BuildConfig` picks up the value.
 
-## Redirect URI (required once in Spotify Dashboard)
+## Redirect URI (already on your Spotify app)
 
-In the **existing** Spotify app's settings, add this **exact** redirect URI (works with the Android emulator and physical devices via a custom scheme):
+This build uses the **loopback** redirect that is already registered on that Spotify app (no dashboard change):
 
 ```text
-com.hippi345.nowplayingwallpaper://callback
+http://127.0.0.1:8897/callback
 ```
 
-No client secret is used. Authorization uses **PKCE**; access and refresh tokens are stored only in encrypted on-device preferences.
+On the emulator, `127.0.0.1` is the emulator itself. The app starts a short-lived local HTTP listener on port **8897** before opening Spotify's authorize page; when Spotify redirects to that URL, the app receives the authorization code and completes PKCE token exchange. This does not conflict with desktop apps on your laptop.
+
+The custom scheme `com.hippi345.nowplayingwallpaper://callback` is **not** used (Spotify's authorize page rejected it even when listed).
+
+No client secret is used. Tokens are stored only in encrypted on-device preferences.
 
 ## Behavior
 

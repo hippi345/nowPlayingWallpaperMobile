@@ -26,7 +26,7 @@ android {
 
         val clientId = localProperties.getProperty("SPOTIFY_CLIENT_ID", "your_spotify_client_id_here")
         buildConfigField("String", "SPOTIFY_CLIENT_ID", "\"$clientId\"")
-        buildConfigField("String", "SPOTIFY_REDIRECT_URI", "\"com.hippi345.nowplayingwallpaper://callback\"")
+        buildConfigField("String", "SPOTIFY_REDIRECT_URI", "\"http://127.0.0.1:8897/callback\"")
     }
 
     buildTypes {

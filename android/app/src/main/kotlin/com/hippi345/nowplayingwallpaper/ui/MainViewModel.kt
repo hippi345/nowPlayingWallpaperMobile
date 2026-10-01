@@ -1,7 +1,6 @@
 package com.hippi345.nowplayingwallpaper.ui
 
 import android.app.Application
-import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -11,8 +10,10 @@ import com.hippi345.nowplayingwallpaper.domain.WallpaperLayout
 import com.hippi345.nowplayingwallpaper.spotify.SpotifyAuthManager
 import com.hippi345.nowplayingwallpaper.spotify.SpotifyNowPlayingRepository
 import com.hippi345.nowplayingwallpaper.spotify.SpotifyOAuthConfig
+import com.hippi345.nowplayingwallpaper.spotify.SpotifySignInSession
 import com.hippi345.nowplayingwallpaper.spotify.SpotifyTokenStore
 import com.hippi345.nowplayingwallpaper.spotify.SpotifyWebApiClient
+import android.net.Uri
 import com.hippi345.nowplayingwallpaper.wallpaper.AndroidWallpaperInstaller
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -42,6 +43,7 @@ class MainViewModel(
 ) : AndroidViewModel(application) {
     private val tokenStore = SpotifyTokenStore(application)
     private val authManager = SpotifyAuthManager(tokenStore)
+    private val signInSession = SpotifySignInSession(authManager)
     private val apiClient = SpotifyWebApiClient(authManager)
     private val repository = SpotifyNowPlayingRepository(apiClient)
     private val wallpaperInstaller = AndroidWallpaperInstaller()
@@ -75,31 +77,26 @@ class MainViewModel(
         }
     }
 
-    fun buildAuthorizeUri(): Uri? {
-        if (!SpotifyOAuthConfig.isClientIdConfigured()) return null
-        _uiState.value = _uiState.value.copy(authInProgress = true)
-        return authManager.buildAuthorizeUri()
-    }
-
-    fun onAuthRedirect(code: String?, error: String?) {
+    fun signIn(openAuthorizePage: (Uri) -> Unit) {
         viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(authInProgress = true)
+            when (val result = signInSession.signIn(openAuthorizePage)) {
+                is SpotifySignInSession.SignInResult.Success -> {
+                    refreshPhase()
+                    startPolling()
+                }
+                is SpotifySignInSession.SignInResult.Cancelled -> {
+                    _uiState.value = _uiState.value.copy(
+                        statusMessage = "Spotify sign-in was cancelled.",
+                    )
+                }
+                is SpotifySignInSession.SignInResult.Failure -> {
+                    _uiState.value = _uiState.value.copy(
+                        statusMessage = result.message,
+                    )
+                }
+            }
             _uiState.value = _uiState.value.copy(authInProgress = false)
-            if (error != null) {
-                _uiState.value = _uiState.value.copy(
-                    statusMessage = "Spotify sign-in was cancelled or failed.",
-                )
-                return@launch
-            }
-            if (code.isNullOrBlank()) return@launch
-            val result = authManager.completeAuthorization(code)
-            if (result.isFailure) {
-                _uiState.value = _uiState.value.copy(
-                    statusMessage = "Could not complete Spotify sign-in. Try again.",
-                )
-                return@launch
-            }
-            refreshPhase()
-            startPolling()
         }
     }
 

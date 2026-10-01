@@ -17,7 +17,7 @@ Spotify-only phone wallpapers that show the album art, track title, and artist f
 
 ### Android
 
-See [`android/README.md`](android/README.md). Copy `android/local.properties.example` to `android/local.properties` and paste the **Client ID from your existing Spotify app** (nowPlayingDesktops / spot-ai-fy — not a new app). Add redirect URI `com.hippi345.nowplayingwallpaper://callback` in that app's Spotify Dashboard.
+See [`android/README.md`](android/README.md). Copy `android/local.properties.example` to `android/local.properties` and paste the **Client ID from your existing Spotify app** (nowPlayingDesktops / spot-ai-fy — not a new app). OAuth redirect: `http://127.0.0.1:8897/callback` (already on that Spotify app).
 
 ### iOS
 
