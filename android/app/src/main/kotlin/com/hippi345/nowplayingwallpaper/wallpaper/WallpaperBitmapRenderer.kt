@@ -4,14 +4,11 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
 import com.hippi345.nowplayingwallpaper.domain.NowPlayingTrack
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import kotlin.math.max
 
 class WallpaperBitmapRenderer(
     private val httpClient: OkHttpClient = OkHttpClient(),
@@ -25,14 +22,12 @@ class WallpaperBitmapRenderer(
         val height = canvasSize.height
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
+        canvas.drawColor(LETTERBOX_COLOR)
 
         val art = track.albumArtUrl?.let { downloadBitmap(it) }
         if (art != null) {
-            drawBlurredBackdrop(canvas, art, width, height)
             drawFitCenterCover(canvas, art, width, height)
             art.recycle()
-        } else {
-            canvas.drawColor(0xFF121212.toInt())
         }
         bitmap
     }
@@ -46,24 +41,7 @@ class WallpaperBitmapRenderer(
         }
     }
 
-    /**
-     * Soft fill behind the cover: heavily downscaled center-crop, then upscaled (blur) with slight dim.
-     */
-    private fun drawBlurredBackdrop(canvas: Canvas, source: Bitmap, width: Int, height: Int) {
-        val crop = centerCropBitmap(source, width, height)
-        val downW = 48.coerceAtMost(width)
-        val downH = (downW * height.toFloat() / width).toInt().coerceAtLeast(1)
-        val tiny = Bitmap.createScaledBitmap(crop, downW, downH, true)
-        if (crop != source) crop.recycle()
-        val blurred = Bitmap.createScaledBitmap(tiny, width, height, true)
-        tiny.recycle()
-        val dim = Paint().apply { color = Color.argb(90, 0, 0, 0) }
-        canvas.drawBitmap(blurred, 0f, 0f, null)
-        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), dim)
-        blurred.recycle()
-    }
-
-    /** Full album cover visible, centered — reads as the album, not a zoomed crop. */
+    /** Full square (or rectangular) cover visible, scaled up to the largest size that fits — no crop, no blur. */
     private fun drawFitCenterCover(canvas: Canvas, source: Bitmap, width: Int, height: Int) {
         val (scaledW, scaledH) = WallpaperArtLayout.fitCenterSize(
             source.width,
@@ -78,21 +56,7 @@ class WallpaperBitmapRenderer(
         scaled.recycle()
     }
 
-    private fun centerCropBitmap(source: Bitmap, width: Int, height: Int): Bitmap {
-        val scale = max(width.toFloat() / source.width, height.toFloat() / source.height)
-        val scaledW = (source.width * scale).toInt().coerceAtLeast(1)
-        val scaledH = (source.height * scale).toInt().coerceAtLeast(1)
-        val scaled = Bitmap.createScaledBitmap(source, scaledW, scaledH, true)
-        val left = ((scaledW - width) / 2).coerceAtLeast(0)
-        val top = ((scaledH - height) / 2).coerceAtLeast(0)
-        val cropped = Bitmap.createBitmap(
-            scaled,
-            left,
-            top,
-            width.coerceAtMost(scaledW),
-            height.coerceAtMost(scaledH),
-        )
-        if (scaled != source) scaled.recycle()
-        return cropped
+    companion object {
+        private const val LETTERBOX_COLOR = 0xFF121212.toInt()
     }
 }
