@@ -4,6 +4,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
 import com.hippi345.nowplayingwallpaper.domain.NowPlayingTrack
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -26,7 +28,8 @@ class WallpaperBitmapRenderer(
 
         val art = track.albumArtUrl?.let { downloadBitmap(it) }
         if (art != null) {
-            drawCenterCrop(canvas, art, width, height)
+            drawBlurredBackdrop(canvas, art, width, height)
+            drawFitCenterCover(canvas, art, width, height)
             art.recycle()
         } else {
             canvas.drawColor(0xFF121212.toInt())
@@ -43,7 +46,39 @@ class WallpaperBitmapRenderer(
         }
     }
 
-    private fun drawCenterCrop(canvas: Canvas, source: Bitmap, width: Int, height: Int) {
+    /**
+     * Soft fill behind the cover: heavily downscaled center-crop, then upscaled (blur) with slight dim.
+     */
+    private fun drawBlurredBackdrop(canvas: Canvas, source: Bitmap, width: Int, height: Int) {
+        val crop = centerCropBitmap(source, width, height)
+        val downW = 48.coerceAtMost(width)
+        val downH = (downW * height.toFloat() / width).toInt().coerceAtLeast(1)
+        val tiny = Bitmap.createScaledBitmap(crop, downW, downH, true)
+        if (crop != source) crop.recycle()
+        val blurred = Bitmap.createScaledBitmap(tiny, width, height, true)
+        tiny.recycle()
+        val dim = Paint().apply { color = Color.argb(90, 0, 0, 0) }
+        canvas.drawBitmap(blurred, 0f, 0f, null)
+        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), dim)
+        blurred.recycle()
+    }
+
+    /** Full album cover visible, centered — reads as the album, not a zoomed crop. */
+    private fun drawFitCenterCover(canvas: Canvas, source: Bitmap, width: Int, height: Int) {
+        val (scaledW, scaledH) = WallpaperArtLayout.fitCenterSize(
+            source.width,
+            source.height,
+            width,
+            height,
+        )
+        val scaled = Bitmap.createScaledBitmap(source, scaledW, scaledH, true)
+        val left = (width - scaledW) / 2f
+        val top = (height - scaledH) / 2f
+        canvas.drawBitmap(scaled, left, top, null)
+        scaled.recycle()
+    }
+
+    private fun centerCropBitmap(source: Bitmap, width: Int, height: Int): Bitmap {
         val scale = max(width.toFloat() / source.width, height.toFloat() / source.height)
         val scaledW = (source.width * scale).toInt().coerceAtLeast(1)
         val scaledH = (source.height * scale).toInt().coerceAtLeast(1)
@@ -57,8 +92,7 @@ class WallpaperBitmapRenderer(
             width.coerceAtMost(scaledW),
             height.coerceAtMost(scaledH),
         )
-        canvas.drawBitmap(cropped, 0f, 0f, null)
         if (scaled != source) scaled.recycle()
-        cropped.recycle()
+        return cropped
     }
 }

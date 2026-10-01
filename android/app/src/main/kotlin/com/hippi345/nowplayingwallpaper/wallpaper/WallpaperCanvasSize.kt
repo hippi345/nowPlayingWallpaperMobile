@@ -6,7 +6,7 @@ import android.util.DisplayMetrics
 
 /**
  * Launcher wallpaper bitmap size: at least [WallpaperManager.getDesiredMinimumWidth/Height],
- * which is typically wider than the visible screen (parallax). Center-crop art to this canvas.
+ * which is typically wider than the visible screen (parallax). Album art is fit-center on this canvas.
  */
 data class WallpaperCanvasSize(
     val width: Int,

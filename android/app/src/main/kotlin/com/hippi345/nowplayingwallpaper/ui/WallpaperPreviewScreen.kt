@@ -29,13 +29,14 @@ fun WallpaperPreviewCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxSize()
-                .clip(RoundedCornerShape(16.dp)),
+                .clip(RoundedCornerShape(16.dp))
+                .background(Color(0xFF121212)),
         ) {
             if (layout.albumArtUrl != null) {
                 AsyncImage(
                     model = layout.albumArtUrl,
                     contentDescription = null,
-                    contentScale = ContentScale.Crop,
+                    contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxSize(),
                 )
             } else {

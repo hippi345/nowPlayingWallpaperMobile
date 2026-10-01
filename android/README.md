@@ -31,7 +31,7 @@ No client secret is used. Tokens are stored only in encrypted on-device preferen
 
 - Sign in opens Spotify's authorize page in Chrome Custom Tabs.
 - While signed in, a **foreground service** polls Spotify's Web API `GET /v1/me/player/currently-playing` every **2 seconds**, including when this app is not on screen (home screen, other apps). You do not need to open the app for the wallpaper to update.
-- Wallpaper bitmap size uses `WallpaperManager.getDesiredMinimumWidth/Height` with **center-crop** so album art fills the launcher canvas (including parallax width), art only.
+- Wallpaper bitmap size uses `WallpaperManager.getDesiredMinimumWidth/Height`. The **full album cover** is drawn **fit-center** (contain) so it reads as the album, not a tight crop; letterbox areas use a soft blurred extension of the art. No text on the image.
 - When a track is playing, **album art only** (full screen, no title or artist on the wallpaper) is applied with `WallpaperManager`.
 - When nothing is playing, or you are signed out, the app shows a clear message — **no sample or invented tracks**.
 
