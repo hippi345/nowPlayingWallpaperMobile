@@ -1,6 +1,7 @@
 package com.hippi345.nowplayingwallpaper.sync
 
 import android.content.Context
+import androidx.core.content.edit
 import com.hippi345.nowplayingwallpaper.domain.WallpaperLayout
 import com.hippi345.nowplayingwallpaper.spotify.SpotifyAuthManager
 import com.hippi345.nowplayingwallpaper.spotify.SpotifyNowPlayingRepository
@@ -19,6 +20,7 @@ class WallpaperSyncEngine(
     private val authManager = SpotifyAuthManager(tokenStore)
     private val repository = SpotifyNowPlayingRepository(SpotifyWebApiClient(authManager))
     private val wallpaperInstaller = AndroidWallpaperInstaller()
+    private val wallpaperPrefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     private val _state = MutableStateFlow(WallpaperSyncState())
     val state: StateFlow<WallpaperSyncState> = _state.asStateFlow()
@@ -55,10 +57,15 @@ class WallpaperSyncEngine(
                     lastWallpaperTrack = track,
                 )
                 val identity = track.wallpaperIdentity()
-                if (identity != lastAppliedWallpaperIdentity) {
+                val pipelineStale =
+                    wallpaperPrefs.getInt(KEY_PIPELINE_VERSION, 0) < WALLPAPER_PIPELINE_VERSION
+                if (identity != lastAppliedWallpaperIdentity || pipelineStale) {
                     val applied = wallpaperInstaller.apply(appContext, track)
                     if (applied) {
                         lastAppliedWallpaperIdentity = identity
+                        wallpaperPrefs.edit {
+                            putInt(KEY_PIPELINE_VERSION, WALLPAPER_PIPELINE_VERSION)
+                        }
                     }
                 }
             }
@@ -90,5 +97,10 @@ class WallpaperSyncEngine(
     companion object {
         /** Poll interval while signed in (foreground service). */
         const val POLL_INTERVAL_MS: Long = 2_000L
+
+        private const val PREFS_NAME = "wallpaper_sync"
+        private const val KEY_PIPELINE_VERSION = "pipeline_version"
+        /** Bump when wallpaper compose output changes so devices refresh stale center-crop frames. */
+        private const val WALLPAPER_PIPELINE_VERSION = 2
     }
 }

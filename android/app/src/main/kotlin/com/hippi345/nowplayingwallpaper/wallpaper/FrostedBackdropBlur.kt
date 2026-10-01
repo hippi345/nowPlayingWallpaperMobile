@@ -14,7 +14,21 @@ object FrostedBackdropBlur {
 
     fun blurCenterCropForCanvas(source: Bitmap, canvasWidth: Int, canvasHeight: Int): Bitmap {
         val crop = centerCrop(source, canvasWidth, canvasHeight)
-        val blurred = blurFrostBitmap(crop)
+        val blurred = try {
+            blurFrostBitmap(crop)
+        } catch (_: OutOfMemoryError) {
+            val reduced = Bitmap.createScaledBitmap(
+                crop,
+                max(1, crop.width / 2),
+                max(1, crop.height / 2),
+                true,
+            )
+            if (reduced != crop) crop.recycle()
+            val smallBlur = blurFrostBitmap(reduced)
+            val upscaled = Bitmap.createScaledBitmap(smallBlur, canvasWidth, canvasHeight, true)
+            smallBlur.recycle()
+            upscaled
+        }
         if (blurred != crop) crop.recycle()
         return blurred
     }

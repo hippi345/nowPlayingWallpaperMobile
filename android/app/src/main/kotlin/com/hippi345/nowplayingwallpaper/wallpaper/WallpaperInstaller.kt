@@ -2,6 +2,7 @@ package com.hippi345.nowplayingwallpaper.wallpaper
 
 import android.app.WallpaperManager
 import android.content.Context
+import android.graphics.Rect
 import android.os.Build
 import com.hippi345.nowplayingwallpaper.domain.NowPlayingTrack
 import kotlinx.coroutines.Dispatchers
@@ -32,10 +33,11 @@ class AndroidWallpaperInstaller(
 
     private fun applyWallpaper(context: Context, bitmap: android.graphics.Bitmap) {
         val wallpaperManager = WallpaperManager.getInstance(context)
+        val cropHint = Rect(0, 0, bitmap.width, bitmap.height)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             wallpaperManager.setBitmap(
                 bitmap,
-                null,
+                cropHint,
                 true,
                 WallpaperManager.FLAG_SYSTEM or WallpaperManager.FLAG_LOCK,
             )
