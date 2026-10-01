@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Now Playing Wallpaper</string>
+    <string name="wallpaper_preview_title">Wallpaper preview</string>
+    <string name="spotify_only_notice">Spotify only. Wallpaper display — no playback controls.</string>
+    <string name="missing_client_id_title">Spotify Client ID required</string>
+    <string name="sign_in_spotify">Sign in with Spotify</string>
+    <string name="sign_out_spotify">Sign out</string>
+    <string name="no_transport_controls">No play, pause, or skip — wallpaper only.</string>
+    <string name="wallpaper_sync_channel_name">Spotify wallpaper sync</string>
+    <string name="wallpaper_sync_channel_description">Keeps your wallpaper in sync with Spotify while signed in.</string>
+    <string name="wallpaper_sync_notification_title">Now Playing Wallpaper</string>
+    <string name="wallpaper_sync_notification_text">Updating wallpaper from Spotify</string>
+</resources>

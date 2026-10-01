@@ -1,0 +1,32 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Android SDK (local VM only)
+android-sdk/
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+shared/**/build/
+android/local.properties
+android/**/local.properties
+android/release-signing.properties
+android/**/*.jks
+*.iml
+.idea/
+.cxx/
+
+# iOS
+ios/Config/SpotifySecrets.xcconfig
+ios/**/xcuserdata/
+ios/**/DerivedData/
+*.xcuserstate
+
+# Secrets / env
+.env
+.env.*
+!*.example
+!*.example.*
+android/.kotlin/
