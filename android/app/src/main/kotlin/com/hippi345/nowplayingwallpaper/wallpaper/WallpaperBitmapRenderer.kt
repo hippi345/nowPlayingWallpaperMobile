@@ -11,7 +11,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import kotlin.math.max
 
 class WallpaperBitmapRenderer(
     private val httpClient: OkHttpClient = OkHttpClient(),
@@ -47,21 +46,12 @@ class WallpaperBitmapRenderer(
         }
     }
 
-    /**
-     * Frosted-glass fill: blurred center-crop of the cover plus a light translucent veil (not flat #121212).
-     */
     private fun drawFrostedBackdrop(canvas: Canvas, source: Bitmap, width: Int, height: Int) {
-        val crop = centerCropBitmap(source, width, height)
-        val downW = 56.coerceAtMost(width)
-        val downH = (downW * height.toFloat() / width).toInt().coerceAtLeast(1)
-        val tiny = Bitmap.createScaledBitmap(crop, downW, downH, true)
-        if (crop != source) crop.recycle()
-        val blurred = Bitmap.createScaledBitmap(tiny, width, height, true)
-        tiny.recycle()
+        val blurred = FrostedBackdropBlur.blurCenterCropForCanvas(source, width, height)
         canvas.drawBitmap(blurred, 0f, 0f, null)
         blurred.recycle()
         val frostVeil = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.argb(150, 245, 245, 250)
+            color = Color.argb(115, 245, 245, 250)
         }
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), frostVeil)
     }
@@ -79,23 +69,5 @@ class WallpaperBitmapRenderer(
         val top = (height - scaledH) / 2f
         canvas.drawBitmap(scaled, left, top, null)
         scaled.recycle()
-    }
-
-    private fun centerCropBitmap(source: Bitmap, width: Int, height: Int): Bitmap {
-        val scale = max(width.toFloat() / source.width, height.toFloat() / source.height)
-        val scaledW = (source.width * scale).toInt().coerceAtLeast(1)
-        val scaledH = (source.height * scale).toInt().coerceAtLeast(1)
-        val scaled = Bitmap.createScaledBitmap(source, scaledW, scaledH, true)
-        val left = ((scaledW - width) / 2).coerceAtLeast(0)
-        val top = ((scaledH - height) / 2).coerceAtLeast(0)
-        val cropped = Bitmap.createBitmap(
-            scaled,
-            left,
-            top,
-            width.coerceAtMost(scaledW),
-            height.coerceAtMost(scaledH),
-        )
-        if (scaled != source) scaled.recycle()
-        return cropped
     }
 }
