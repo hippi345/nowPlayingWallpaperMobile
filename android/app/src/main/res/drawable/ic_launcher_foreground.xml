@@ -9,11 +9,11 @@
         android:pathData="M31,31h46v46h-46z" />
     <path
         android:fillColor="@color/ic_launcher_background"
-        android:pathData="M42,69.5 L45.3,69.5 L45.3,55.6 L70.1,51.9 L70.1,66.6 L66.5,66.6 L66.5,54.3 L42,57.8 L42,69.5 Z" />
+        android:pathData="M42,70 L45.3,70 L45.3,55.6 L70.1,51.9 L70.1,67.3 L66.5,67.3 L66.5,54.3 L42,57.8 L42,70 Z" />
     <path
         android:fillColor="@color/ic_launcher_background"
-        android:pathData="M31.5,67.8 a6.2,5.4 0 1,0 12.4,0 a6.2,5.4 0 1,0 -12.4,0 Z" />
+        android:pathData="M31.6,68.1 a6.2,5.4 0 1,0 12.4,0 a6.2,5.4 0 1,0 -12.4,0 Z" />
     <path
         android:fillColor="@color/ic_launcher_background"
-        android:pathData="M55.9,65.2 a6.2,5.4 0 1,0 12.4,0 a6.2,5.4 0 1,0 -12.4,0 Z" />
+        android:pathData="M55.8,66.8 a6.2,5.4 0 1,0 12.4,0 a6.2,5.4 0 1,0 -12.4,0 Z" />
 </vector>
