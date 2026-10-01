@@ -32,7 +32,7 @@ flowchart LR
 
 ## Android (future)
 
-- Background wallpaper refresh while the app is not open (WorkManager / foreground service TBD).
+- Faster poll tuning if Spotify rate limits become an issue.
 
 ## iOS (planned)
 

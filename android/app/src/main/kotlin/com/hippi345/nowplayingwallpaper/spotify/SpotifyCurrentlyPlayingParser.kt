@@ -23,6 +23,7 @@ object SpotifyCurrentlyPlayingParser {
             ?.optJSONObject(0)
             ?.optString("url")
         return NowPlayingTrack(
+            spotifyItemId = item.optString("id").takeIf { it.isNotBlank() },
             title = title,
             artist = artist,
             albumName = albumName,

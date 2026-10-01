@@ -7,4 +7,8 @@
     <string name="sign_in_spotify">Sign in with Spotify</string>
     <string name="sign_out_spotify">Sign out</string>
     <string name="no_transport_controls">No play, pause, or skip — wallpaper only.</string>
+    <string name="wallpaper_sync_channel_name">Spotify wallpaper sync</string>
+    <string name="wallpaper_sync_channel_description">Keeps your wallpaper in sync with Spotify while signed in.</string>
+    <string name="wallpaper_sync_notification_title">Now Playing Wallpaper</string>
+    <string name="wallpaper_sync_notification_text">Updating wallpaper from Spotify</string>
 </resources>

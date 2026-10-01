@@ -1,26 +1,20 @@
 package com.hippi345.nowplayingwallpaper.ui
 
 import android.app.Application
+import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.hippi345.nowplayingwallpaper.domain.NowPlayingTrack
-import com.hippi345.nowplayingwallpaper.domain.WallpaperLayout
+import com.hippi345.nowplayingwallpaper.NowPlayingWallpaperApplication
 import com.hippi345.nowplayingwallpaper.spotify.SpotifyAuthManager
-import com.hippi345.nowplayingwallpaper.spotify.SpotifyNowPlayingRepository
 import com.hippi345.nowplayingwallpaper.spotify.SpotifyOAuthConfig
 import com.hippi345.nowplayingwallpaper.spotify.SpotifySignInSession
 import com.hippi345.nowplayingwallpaper.spotify.SpotifyTokenStore
-import com.hippi345.nowplayingwallpaper.spotify.SpotifyWebApiClient
-import android.net.Uri
-import com.hippi345.nowplayingwallpaper.wallpaper.AndroidWallpaperInstaller
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import com.hippi345.nowplayingwallpaper.sync.SpotifyWallpaperSyncService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 enum class ScreenPhase {
@@ -33,48 +27,57 @@ data class MainUiState(
     val phase: ScreenPhase = ScreenPhase.SignedOut,
     val loading: Boolean = true,
     val statusMessage: String? = null,
-    val layout: WallpaperLayout? = null,
-    val lastWallpaperTrack: NowPlayingTrack? = null,
+    val layout: com.hippi345.nowplayingwallpaper.domain.WallpaperLayout? = null,
     val authInProgress: Boolean = false,
 )
 
 class MainViewModel(
     application: Application,
 ) : AndroidViewModel(application) {
-    private val tokenStore = SpotifyTokenStore(application)
-    private val authManager = SpotifyAuthManager(tokenStore)
-    private val signInSession = SpotifySignInSession(authManager)
-    private val apiClient = SpotifyWebApiClient(authManager)
-    private val repository = SpotifyNowPlayingRepository(apiClient)
-    private val wallpaperInstaller = AndroidWallpaperInstaller()
+    private val app = application as NowPlayingWallpaperApplication
+    private val syncEngine = app.wallpaperSyncEngine
+    private val signInSession = SpotifySignInSession(
+        SpotifyAuthManager(SpotifyTokenStore(application)),
+    )
+
+    private var screenPhase: ScreenPhase = ScreenPhase.SignedOut
 
     private val _uiState = MutableStateFlow(MainUiState())
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
 
-    private var pollingJob: Job? = null
-
     init {
         refreshPhase()
-        if (_uiState.value.phase == ScreenPhase.SignedIn) {
-            startPolling()
+        viewModelScope.launch {
+            syncEngine.state.collect { sync ->
+                _uiState.value = MainUiState(
+                    phase = screenPhase,
+                    loading = sync.loading && screenPhase == ScreenPhase.SignedIn,
+                    statusMessage = messageForPhase(screenPhase, sync.statusMessage),
+                    layout = if (screenPhase == ScreenPhase.SignedIn) sync.layout else null,
+                    authInProgress = _uiState.value.authInProgress,
+                )
+            }
         }
     }
 
     fun refreshPhase() {
-        val phase = when {
+        screenPhase = when {
             !SpotifyOAuthConfig.isClientIdConfigured() -> ScreenPhase.MissingClientId
-            authManager.isSignedIn() -> ScreenPhase.SignedIn
+            syncEngine.isSignedIn() -> ScreenPhase.SignedIn
             else -> ScreenPhase.SignedOut
         }
-        _uiState.value = _uiState.value.copy(
-            phase = phase,
-            loading = phase == ScreenPhase.SignedIn,
-            statusMessage = statusForPhase(phase),
-            layout = if (phase != ScreenPhase.SignedIn) null else _uiState.value.layout,
-        )
-        if (phase != ScreenPhase.SignedIn) {
-            pollingJob?.cancel()
+        when (screenPhase) {
+            ScreenPhase.SignedIn -> {
+                SpotifyWallpaperSyncService.start(getApplication())
+                viewModelScope.launch { syncEngine.syncOnce() }
+            }
+            else -> SpotifyWallpaperSyncService.stop(getApplication())
         }
+        _uiState.value = _uiState.value.copy(
+            phase = screenPhase,
+            statusMessage = messageForPhase(screenPhase, syncEngine.state.value.statusMessage),
+            layout = if (screenPhase == ScreenPhase.SignedIn) syncEngine.state.value.layout else null,
+        )
     }
 
     fun signIn(openAuthorizePage: (Uri) -> Unit) {
@@ -82,8 +85,8 @@ class MainViewModel(
             _uiState.value = _uiState.value.copy(authInProgress = true)
             when (val result = signInSession.signIn(openAuthorizePage)) {
                 is SpotifySignInSession.SignInResult.Success -> {
+                    SpotifyWallpaperSyncService.start(getApplication())
                     refreshPhase()
-                    startPolling()
                 }
                 is SpotifySignInSession.SignInResult.Cancelled -> {
                     _uiState.value = _uiState.value.copy(
@@ -91,9 +94,7 @@ class MainViewModel(
                     )
                 }
                 is SpotifySignInSession.SignInResult.Failure -> {
-                    _uiState.value = _uiState.value.copy(
-                        statusMessage = result.message,
-                    )
+                    _uiState.value = _uiState.value.copy(statusMessage = result.message)
                 }
             }
             _uiState.value = _uiState.value.copy(authInProgress = false)
@@ -101,76 +102,26 @@ class MainViewModel(
     }
 
     fun signOut() {
-        authManager.signOut()
-        pollingJob?.cancel()
+        SpotifyWallpaperSyncService.stop(getApplication())
+        syncEngine.signOut()
+        screenPhase = if (SpotifyOAuthConfig.isClientIdConfigured()) {
+            ScreenPhase.SignedOut
+        } else {
+            ScreenPhase.MissingClientId
+        }
         _uiState.value = MainUiState(
-            phase = if (SpotifyOAuthConfig.isClientIdConfigured()) {
-                ScreenPhase.SignedOut
-            } else {
-                ScreenPhase.MissingClientId
-            },
+            phase = screenPhase,
             loading = false,
-            statusMessage = statusForPhase(ScreenPhase.SignedOut),
+            statusMessage = messageForPhase(screenPhase, null),
         )
     }
 
-    fun startPolling() {
-        if (_uiState.value.phase != ScreenPhase.SignedIn) return
-        pollingJob?.cancel()
-        pollingJob = viewModelScope.launch {
-            while (isActive) {
-                pollNowPlaying()
-                delay(POLL_INTERVAL_MS)
-            }
-        }
-    }
-
-    private suspend fun pollNowPlaying() {
-        when (val result = repository.fetchWithStatus()) {
-            is SpotifyWebApiClient.CurrentlyPlayingResult.Playing -> {
-                val track = result.track
-                val previous = _uiState.value.lastWallpaperTrack
-                val layout = WallpaperLayout.fromTrack(track)
-                _uiState.value = _uiState.value.copy(
-                    loading = false,
-                    layout = layout,
-                    statusMessage = null,
-                    lastWallpaperTrack = track,
-                )
-                if (track != previous) {
-                    wallpaperInstaller.apply(getApplication(), track)
-                }
-            }
-            is SpotifyWebApiClient.CurrentlyPlayingResult.NothingPlaying -> {
-                _uiState.value = _uiState.value.copy(
-                    loading = false,
-                    layout = null,
-                    statusMessage = "Nothing is playing on Spotify right now.",
-                )
-            }
-            is SpotifyWebApiClient.CurrentlyPlayingResult.Unauthorized -> {
-                authManager.signOut()
-                refreshPhase()
-                _uiState.value = _uiState.value.copy(
-                    loading = false,
-                    statusMessage = "Session expired. Sign in with Spotify again.",
-                )
-            }
-            is SpotifyWebApiClient.CurrentlyPlayingResult.Error -> {
-                _uiState.value = _uiState.value.copy(
-                    loading = false,
-                    statusMessage = result.message,
-                )
-            }
-        }
-    }
-
-    private fun statusForPhase(phase: ScreenPhase): String? = when (phase) {
+    private fun messageForPhase(phase: ScreenPhase, syncMessage: String?): String? = when (phase) {
         ScreenPhase.MissingClientId ->
             "Add SPOTIFY_CLIENT_ID to android/local.properties (paste the Client ID from your existing Spotify app used for nowPlayingDesktops / spot-ai-fy)."
         ScreenPhase.SignedOut ->
             "Sign in with Spotify to mirror your live now playing track to the wallpaper."
-        ScreenPhase.SignedIn -> null
+        ScreenPhase.SignedIn -> syncMessage
     }
 
     class Factory(
@@ -183,9 +134,5 @@ class MainViewModel(
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }
-    }
-
-    companion object {
-        private const val POLL_INTERVAL_MS = 10_000L
     }
 }

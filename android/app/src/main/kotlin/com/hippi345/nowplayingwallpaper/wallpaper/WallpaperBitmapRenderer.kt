@@ -18,9 +18,9 @@ class WallpaperBitmapRenderer(
         context: Context,
         track: NowPlayingTrack,
     ): Bitmap = withContext(Dispatchers.IO) {
-        val metrics = context.resources.displayMetrics
-        val width = metrics.widthPixels
-        val height = metrics.heightPixels
+        val canvasSize = WallpaperCanvasSize.forDevice(context)
+        val width = canvasSize.width
+        val height = canvasSize.height
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
 
