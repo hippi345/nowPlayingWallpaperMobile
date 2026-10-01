@@ -56,8 +56,10 @@ class WallpaperSyncEngine(
                 )
                 val identity = track.wallpaperIdentity()
                 if (identity != lastAppliedWallpaperIdentity) {
-                    wallpaperInstaller.apply(appContext, track)
-                    lastAppliedWallpaperIdentity = identity
+                    val applied = wallpaperInstaller.apply(appContext, track)
+                    if (applied) {
+                        lastAppliedWallpaperIdentity = identity
+                    }
                 }
             }
             is SpotifyWebApiClient.CurrentlyPlayingResult.NothingPlaying -> {
