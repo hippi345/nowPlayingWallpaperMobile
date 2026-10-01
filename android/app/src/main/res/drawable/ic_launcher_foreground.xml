@@ -7,13 +7,14 @@
     <path
         android:fillColor="#FFFFFF"
         android:pathData="M31,31h46v46h-46z" />
-    <path
-        android:fillColor="@color/ic_launcher_background"
-        android:pathData="M42,70 L45.3,70 L45.3,55.6 L70.1,51.9 L70.1,67.3 L66.5,67.3 L66.5,54.3 L42,57.8 L42,70 Z" />
-    <path
-        android:fillColor="@color/ic_launcher_background"
-        android:pathData="M31.6,68.1 a6.2,5.4 0 1,0 12.4,0 a6.2,5.4 0 1,0 -12.4,0 Z" />
-    <path
-        android:fillColor="@color/ic_launcher_background"
-        android:pathData="M55.8,66.8 a6.2,5.4 0 1,0 12.4,0 a6.2,5.4 0 1,0 -12.4,0 Z" />
+    <!-- Phosphor Icons: music-notes (regular), MIT — scaled into the inset white square -->
+    <group
+        android:translateX="31"
+        android:translateY="31"
+        android:scaleX="0.1796875"
+        android:scaleY="0.1796875">
+        <path
+            android:fillColor="@color/ic_launcher_background"
+            android:pathData="M212.92,17.69a8,8,0,0,0,-6.86,-1.45l-128,32A8,8,0,0,0,72,56V166.08A36,36,0,1,0,88,196V110.25l112,-28v51.83A36,36,0,1,0,216,164V24A8,8,0,0,0,212.92,17.69ZM52,216a20,20,0,1,1,20,-20A20,20,0,0,1,52,216ZM88,93.75V62.25l112,-28v31.5ZM180,184a20,20,0,1,1,20,-20A20,20,0,0,1,180,184Z" />
+    </group>
 </vector>
