@@ -1,1 +1,1 @@
-# nowPlayingWallpaperMobilr
+# nowPlayingWallpaperMobile
